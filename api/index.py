@@ -359,11 +359,12 @@ def benchmark(req: BenchmarkRequest):
 
 # ---------------------------------------------------------------------------
 # Register the routes under every path form Vercel might hand to the function:
-#   /api/sample  (original path), /sample, and /api/index/sample.
+#   /api/sample  (original path), /sample, /api/index/sample, /api/index.py/sample.
 # ---------------------------------------------------------------------------
 app.include_router(router, prefix="/api")
 app.include_router(router)
 app.include_router(router, prefix="/api/index")
+app.include_router(router, prefix="/api/index.py")
 
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST"], include_in_schema=False)
