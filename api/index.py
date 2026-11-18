@@ -369,8 +369,14 @@ app.include_router(router, prefix="/api/index.py")
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST"], include_in_schema=False)
 def not_found_debug(full_path: str, request: Request):
-    """Shows which path the function actually received (helps debug 404s)."""
+    """Shows which path the function actually received and headers."""
+    headers_dict = dict(request.headers)
     raise HTTPException(
         status_code=404,
-        detail=f"No API route for path '/{full_path}' (method {request.method}).",
+        detail={
+            "error": f"No API route for path '/{full_path}' (method {request.method}).",
+            "path": request.url.path,
+            "x_matched_path": headers_dict.get("x-matched-path"),
+            "x_now_route_matches": headers_dict.get("x-now-route-matches"),
+        },
     )
