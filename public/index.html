@@ -1,827 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Last-Mile Delivery Route Optimiser</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
-  h1{text-align:center;padding:18px 0 6px;font-size:1.5rem;color:#60a5fa;letter-spacing:.5px}
-  .subtitle{text-align:center;font-size:.82rem;color:#94a3b8;margin-bottom:16px}
-  .container{max-width:1300px;margin:0 auto;padding:0 14px 40px}
-  .card{background:#1e2130;border:1px solid #2d3350;border-radius:10px;padding:16px;margin-bottom:14px}
-  .card h2{font-size:.95rem;font-weight:600;color:#93c5fd;margin-bottom:12px;border-bottom:1px solid #2d3350;padding-bottom:8px}
-  .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;transition:opacity .15s,transform .1s}
-  .btn:hover{opacity:.85;transform:translateY(-1px)}
-  .btn:active{transform:translateY(0)}
-  .btn-primary{background:#3b82f6;color:#fff}
-  .btn-success{background:#10b981;color:#fff}
-  .btn-warning{background:#f59e0b;color:#fff}
-  .btn-danger{background:#ef4444;color:#fff}
-  .btn-secondary{background:#374151;color:#e2e8f0;border:1px solid #4b5563}
-  .btn-sm{padding:4px 10px;font-size:.75rem}
-  .btn-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  input[type=number],input[type=text]{background:#2d3350;border:1px solid #4b5563;color:#e2e8f0;border-radius:5px;padding:5px 9px;font-size:.82rem;width:100%}
-  input[type=number]:focus,input[type=text]:focus{outline:2px solid #3b82f6;border-color:#3b82f6}
-  .field-group{display:flex;align-items:center;gap:8px}
-  .field-group label{white-space:nowrap;font-size:.8rem;color:#94a3b8;min-width:60px}
-  .field-group input{width:80px}
-  .canvas-wrap{position:relative;overflow:hidden;border-radius:8px;background:#111827}
-  #mapCanvas{display:block;max-width:100%;height:auto;cursor:crosshair}
-  .stop-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-  .stop-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;cursor:pointer;font-size:.78rem;font-weight:600;user-select:none;border:2px solid transparent;transition:all .15s}
-  .stop-chip input{display:none}
-  .stop-chip.checked{background:#1d4ed8;border-color:#3b82f6;color:#fff}
-  .stop-chip:not(.checked){background:#374151;color:#94a3b8}
-  table{width:100%;border-collapse:collapse;font-size:.8rem}
-  th{background:#2d3350;color:#93c5fd;padding:7px 10px;text-align:left;font-weight:600;white-space:nowrap}
-  td{padding:6px 10px;border-bottom:1px solid #2d3350;white-space:nowrap}
-  tr:hover td{background:#252840}
-  .row-best{background:#1a3a2a!important}
-  .row-exact{background:#1a1a35!important}
-  .row-best td,.row-exact td{border-bottom:1px solid #2d3350}
-  .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.72rem;font-weight:700}
-  .badge-green{background:#065f46;color:#6ee7b7}
-  .badge-blue{background:#1e3a5f;color:#93c5fd}
-  .algo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
-  .algo-chip{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:7px;cursor:pointer;font-size:.82rem;border:2px solid #374151;transition:all .15s;background:#252840}
-  .algo-chip input{accent-color:#3b82f6}
-  .algo-chip:has(input:checked){border-color:#3b82f6;background:#1e3360}
-  .loading{display:flex;align-items:center;gap:8px;font-size:.85rem;color:#60a5fa}
-  .spinner{width:18px;height:18px;border:2px solid #374151;border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .error-box{background:#3b1c1c;border:1px solid #ef4444;border-radius:7px;padding:12px 14px;color:#fca5a5;font-size:.83rem;margin-top:8px}
-  .tw-table th,.tw-table td{padding:5px 8px;font-size:.77rem}
-  .tw-table input{width:60px;text-align:center;padding:3px 5px}
-  .chart-wrap{position:relative;height:280px}
-  .bench-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-  .section-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:800px){.section-row{grid-template-columns:1fr}}
-  .howit{font-size:.82rem;line-height:1.65;color:#94a3b8}
-  .howit strong{color:#e2e8f0}
-  .howit code{background:#2d3350;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:.8rem}
-  .tag{font-size:.7rem;padding:2px 6px;border-radius:3px;font-weight:700}
-  .tag-nn{background:#7c3aed;color:#fff}
-  .tag-gr{background:#0891b2;color:#fff}
-  .tag-2o{background:#059669;color:#fff}
-  .tag-hc{background:#d97706;color:#fff}
-  .tag-sa{background:#dc2626;color:#fff}
-  .tag-ex{background:#2d3350;color:#93c5fd;border:1px solid #4b5563}
-  .hidden{display:none!important}
-  .info-row{font-size:.77rem;color:#94a3b8;margin-top:6px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Last-Mile Route Optimiser (Road-Aware TSP-TW)</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<h1>&#x1F69A; Last-Mile Delivery Route Optimiser</h1>
-<p class="subtitle">TSP with Time Windows &mdash; Nearest Neighbour &middot; Greedy Insertion &middot; 2-opt &middot; Hill Climbing &middot; Simulated Annealing &middot; Exact</p>
 
-<div class="container">
-
-<!-- ===================== MAP MANAGEMENT ===================== -->
-<div class="card">
-  <h2>&#x1F5FA; Map</h2>
-  <div class="btn-row">
-    <button class="btn btn-secondary" id="btnSample" onclick="loadSample()">&#x1F4CD; Sample Map</button>
-    <button class="btn btn-warning" onclick="loadRandom()">&#x1F3B2; Random Map</button>
-    <div class="field-group">
-      <label>Seed</label>
-      <input type="number" id="randSeed" value="1" min="0" style="width:70px">
-    </div>
-    <div class="field-group">
-      <label>Houses</label>
-      <input type="number" id="randHouses" value="8" min="2" max="15" style="width:60px">
-    </div>
-    <label class="btn btn-secondary" style="cursor:pointer">
-      &#x1F4C2; Upload Map
-      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="loadUpload(this)">
-    </label>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Running optimization...</div>
   </div>
-  <div class="canvas-wrap" style="margin-top:12px">
-    <canvas id="mapCanvas"></canvas>
+
+  <div class="app-container">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="sidebar">
+      <h1 class="sidebar-title">⚙️ Route Settings</h1>
+      <hr />
+
+      <!-- 1. Map Input -->
+      <h2>1. 🗺️ Map Input</h2>
+      <div class="radio-group">
+        <label class="radio-item">
+          <input type="radio" name="mapSource" value="procedural" checked />
+          <span>🎲 Procedural City Map</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="mapSource" value="upload" />
+          <span>📁 Upload Custom Map</span>
+        </label>
+      </div>
+
+      <!-- Procedural Map Controls -->
+      <div id="proceduralMapControls">
+        <div class="form-group">
+          <label>Number of Delivery Houses</label>
+          <div class="slider-container">
+            <input type="range" id="nHousesSlider" min="3" max="12" value="8" step="1" />
+            <span class="slider-val-badge" id="nHousesBadge">8</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Random Seed</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <input type="number" id="seedInput" value="42" step="1" style="flex:1;" />
+            <button type="button" class="btn btn-secondary" id="btnNewMap">🎲 New</button>
+          </div>
+          <button type="button" class="btn btn-secondary btn-block" id="btnRegenerateMap">🔄 Regenerate Map</button>
+        </div>
+      </div>
+
+      <!-- Upload Custom Map Controls -->
+      <div id="uploadMapControls" style="display:none;">
+        <div class="form-group">
+          <label>Upload 2D Map (PNG / JPG / BMP)</label>
+          <input type="file" id="mapFileInput" accept=".png,.jpg,.jpeg,.bmp" />
+        </div>
+
+        <div class="form-group">
+          <label>Road Surface Contrast</label>
+          <select id="roadContrastSelect">
+            <option value="dark" selected>Dark Roads on Light Map</option>
+            <option value="light">Light Roads on Dark Map</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Road Detection Grayscale Threshold</label>
+          <div class="slider-container">
+            <input type="range" id="roadThreshSlider" min="30" max="240" value="130" step="5" />
+            <span class="slider-val-badge" id="roadThreshBadge">130</span>
+          </div>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- 2. Detection Verification -->
+      <h2>2. 🔍 Detection Verification</h2>
+      <div id="depotVerifyBox" class="alert-box alert-success">
+        🟢 <b>Verified Red Depot</b>: Detecting hub...
+      </div>
+      <div id="houseVerifyBox" class="alert-box alert-info">
+        🔵 <b>Delivery Houses Detected</b>: 0 stops
+      </div>
+
+      <hr />
+
+      <!-- 3. Schedule & Algorithms -->
+      <h2>3. 🛣️ Schedule & Algorithms</h2>
+
+      <div class="form-group">
+        <label>Depot Departure Time (Minutes from 00:00):</label>
+        <input type="number" id="startTimeInput" min="0" max="1440" value="540" step="15" />
+        <p class="caption">540 = 09:00 AM unified departure.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Depot Closing Time (Minutes from 00:00):</label>
+        <input type="number" id="depotCloseInput" min="0" max="1440" value="1080" step="15" />
+        <p class="caption">1080 = 18:00 PM closing.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Vehicle Travel Speed (px/min):</label>
+        <div class="slider-container">
+          <input type="range" id="speedSlider" min="20" max="120" value="60" step="5" />
+          <span class="slider-val-badge" id="speedBadge">60 px/m</span>
+        </div>
+      </div>
+
+      <label class="checkbox-item">
+        <input type="checkbox" id="hardTwCheckbox" />
+        <span>Hard Time Windows (Reject late arrivals)</span>
+      </label>
+
+      <div class="form-group">
+        <label>Time Window Penalty Weight (λ):</label>
+        <div class="slider-container">
+          <input type="range" id="twWeightSlider" min="0.5" max="5.0" value="1.5" step="0.5" />
+          <span class="slider-val-badge" id="twWeightBadge">1.5</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>A* Search Grid Resolution:</label>
+        <select id="gridScaleSelect">
+          <option value="1">1x (Full Pixel Precision)</option>
+          <option value="2" selected>2x (Fast & Accurate)</option>
+          <option value="3">3x (Ultra Fast)</option>
+        </select>
+      </div>
+
+      <label class="checkbox-item">
+        <input type="checkbox" id="showMaskCheckbox" />
+        <span>👁️ Preview Extracted Road Mask</span>
+      </label>
+
+      <div class="form-group">
+        <label>Algorithms to Benchmark:</label>
+        <div class="algo-pills" id="algoPills">
+          <label class="algo-pill active"><input type="checkbox" value="nn" checked />Nearest Neighbour</label>
+          <label class="algo-pill active"><input type="checkbox" value="greedy" checked />Cheapest Insertion</label>
+          <label class="algo-pill active"><input type="checkbox" value="2opt" checked />2-opt Local Search</label>
+          <label class="algo-pill active"><input type="checkbox" value="hill" checked />Hill Climbing</label>
+          <label class="algo-pill active"><input type="checkbox" value="sa" checked />Simulated Annealing</label>
+          <label class="algo-pill active"><input type="checkbox" value="exact" checked />Exact (Held-Karp ≤ 12)</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Optimization Random Seed:</label>
+        <input type="number" id="optSeedInput" value="42" step="1" />
+      </div>
+
+    </aside>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="main-content">
+      <div class="main-header">🚚 Last-Mile Delivery Route Optimiser</div>
+      <div class="sub-header">
+        Single-Depot Road-Aware TSP with Time Windows (TSP-TW) & Computer Vision &nbsp;|&nbsp;
+        <span id="subHeaderTimes">Start: <b>09:00</b> &nbsp;|&nbsp; Depot Close: <b>18:00</b></span>
+      </div>
+
+      <!-- Top Metric Cards -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">Verified Red Depot</div>
+          <div class="metric-value" id="metricDepot">Hub at (184, 290)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Total Delivery Stops</div>
+          <div class="metric-value" id="metricStops">8 Stops</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Road Routing Engine</div>
+          <div class="metric-value" id="metricEngine">A* 8-Way (Scale: 2x)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Optimization Status</div>
+          <div class="metric-value" id="metricStatus">Ready to Optimize</div>
+        </div>
+      </div>
+
+      <!-- Collapsible Stop & Address Management -->
+      <details class="st-expander">
+        <summary>
+          <span>📍 <b>Manage Stops, Addresses & Time Windows</b> (Input Custom Addresses / CSV Import)</span>
+          <span style="font-size:0.8rem;color:#777;">▼</span>
+        </summary>
+        <div class="st-expander-content">
+          <div class="sub-tabs-header">
+            <button type="button" class="sub-tab-btn active" data-target="tabAddStop">➕ Add Custom Stop</button>
+            <button type="button" class="sub-tab-btn" data-target="tabEditWindows">📝 Edit Time Windows & Service Times</button>
+            <button type="button" class="sub-tab-btn" data-target="tabCsvImport">📁 Import Stops CSV</button>
+          </div>
+
+          <!-- Sub-Tab 1: Add Custom Stop -->
+          <div class="sub-tab-pane active" id="tabAddStop">
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:14px;margin-bottom:14px;">
+              <div>
+                <div class="form-group">
+                  <label>Stop ID / Label:</label>
+                  <input type="text" id="newStopId" value="H9" />
+                </div>
+                <div class="form-group">
+                  <label>Street Address:</label>
+                  <input type="text" id="newStopAddr" value="108 Market St" />
+                </div>
+              </div>
+              <div>
+                <div class="form-group">
+                  <label>Pixel X Coordinate:</label>
+                  <input type="number" id="newStopX" value="300" min="10" max="1190" step="10" />
+                </div>
+                <div class="form-group">
+                  <label>Pixel Y Coordinate:</label>
+                  <input type="number" id="newStopY" value="300" min="10" max="1190" step="10" />
+                </div>
+              </div>
+              <div>
+                <div class="form-group">
+                  <label>Earliest Window (min from 00:00):</label>
+                  <input type="number" id="newStopEarly" value="570" min="0" max="1440" step="15" />
+                </div>
+                <div class="form-group">
+                  <label>Latest Window (min from 00:00):</label>
+                  <input type="number" id="newStopLate" value="660" min="0" max="1440" step="15" />
+                </div>
+                <div class="form-group">
+                  <label>Service Duration (min):</label>
+                  <input type="number" id="newStopSvc" value="5" min="1" max="60" step="1" />
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-secondary" id="btnAddStop">➕ Add Stop to Delivery Network</button>
+          </div>
+
+          <!-- Sub-Tab 2: Edit Time Windows -->
+          <div class="sub-tab-pane" id="tabEditWindows">
+            <p class="caption" style="margin-bottom:10px;">Edit delivery time windows and service times directly. Validates earliest &le; latest.</p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Stop ID</th>
+                    <th>Address</th>
+                    <th>X (px)</th>
+                    <th>Y (px)</th>
+                    <th>Earliest (min)</th>
+                    <th>Latest (min)</th>
+                    <th>Service Time (min)</th>
+                  </tr>
+                </thead>
+                <tbody id="stopEditorBody"></tbody>
+              </table>
+            </div>
+            <button type="button" class="btn btn-secondary" id="btnApplyTimeWindows">💾 Apply Updated Time Windows</button>
+          </div>
+
+          <!-- Sub-Tab 3: CSV Import -->
+          <div class="sub-tab-pane" id="tabCsvImport">
+            <p class="caption" style="margin-bottom:10px;">Upload a CSV file with columns: <code>id</code>, <code>x</code>, <code>y</code>, <code>earliest</code>, <code>latest</code>, <code>service_time</code>, <code>address</code>.</p>
+            <input type="file" id="stopsCsvInput" accept=".csv" style="margin-bottom:12px;" />
+            <br />
+            <button type="button" class="btn btn-secondary" id="btnImportCsv">📥 Import Stops from CSV</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- Interactive Stop Selection -->
+      <div class="stop-multiselect-wrap">
+        <div class="stop-multiselect-header">
+          <label style="font-weight:700;font-size:1rem;">📍 Included Delivery Stops:</label>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnSelectAllStops">Select All</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnClearAllStops">Clear All</button>
+          </div>
+        </div>
+        <div class="stop-chips-grid" id="stopChipsContainer"></div>
+      </div>
+
+      <!-- Optimize Button -->
+      <div style="margin-bottom:28px;">
+        <button type="button" class="btn btn-primary" id="btnOptimize" style="font-size:1rem;padding:12px 28px;">
+          🚀 Optimize Delivery Route
+        </button>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <div class="tabs-header">
+        <button type="button" class="tab-btn active" data-target="tabMap">🗺️ Route Map</button>
+        <button type="button" class="tab-btn" data-target="tabBenchmark">📊 Benchmark Comparison</button>
+        <button type="button" class="tab-btn" data-target="tabConvergence">📈 Convergence Curves</button>
+        <button type="button" class="tab-btn" data-target="tabMultiSeed">🔬 Multi-Seed Study</button>
+        <button type="button" class="tab-btn" data-target="tabManifest">📋 Turn-by-Turn Manifest</button>
+      </div>
+
+      <!-- Tab 1: Route Map -->
+      <div class="tab-pane active" id="tabMap">
+        <div id="algoSelectWrap" style="display:none;margin-bottom:14px;max-width:450px;">
+          <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:6px;">Display Route for Algorithm:</label>
+          <select id="viewAlgoSelect"></select>
+        </div>
+
+        <div class="map-display-wrap" id="mapDisplayContainer">
+          <p style="color:#777;padding:40px;">Loading delivery map...</p>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <button type="button" class="btn btn-secondary" id="btnDownloadRouteMap" style="display:none;">
+            📥 Download Route Map (PNG)
+          </button>
+        </div>
+
+        <!-- Optional Road Mask Preview -->
+        <div id="maskPreviewWrap" style="display:none;margin-top:20px;">
+          <h3 style="font-size:1.05rem;font-weight:600;margin-bottom:8px;">Walkable Road Mask (White = Road, Black = Buildings)</h3>
+          <div class="map-display-wrap">
+            <img id="maskPreviewImg" alt="Walkable Road Mask" />
+            <p class="map-caption">A* Walkable Road Grid</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Benchmark Comparison -->
+      <div class="tab-pane" id="tabBenchmark">
+        <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:10px;">⚡ Performance Benchmark (Single Run)</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Road Distance (px)</th>
+                <th>Drive Time (min)</th>
+                <th>Wait Time (min)</th>
+                <th>Lateness (min)</th>
+                <th>Total Elapsed Time (min)</th>
+                <th>Combined Score</th>
+                <th>Feasible?</th>
+                <th>Late Stops</th>
+                <th>Max Lateness (min)</th>
+                <th>CPU Time (ms)</th>
+                <th>Evaluations</th>
+                <th>Optimality Gap vs Exact</th>
+              </tr>
+            </thead>
+            <tbody id="benchmarkTableBody">
+              <tr><td colspan="13" style="text-align:center;padding:24px;color:#777;">Click <b>"🚀 Optimize Delivery Route"</b> above to run and view benchmark metrics across all algorithms.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <button type="button" class="btn btn-secondary" id="btnExportBenchmarkCsv" style="display:none;">
+            📥 Export Benchmark Results as CSV
+          </button>
+        </div>
+
+        <!-- Best Heuristic Solution Card -->
+        <div id="bestHeuristicCard" class="metric-card" style="display:none;margin-top:14px;line-height:1.7;"></div>
+      </div>
+
+      <!-- Tab 3: Convergence Curves -->
+      <div class="tab-pane" id="tabConvergence">
+        <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:4px;">📈 Solution Improvement vs. Candidate Route Evaluations</h3>
+        <p class="caption" style="margin-bottom:14px;">
+          Shows solution score progression on a shared horizontal axis of route evaluations. Lower is better. Includes exact global optimum as a benchmark reference line.
+        </p>
+
+        <div class="map-display-wrap" id="convergenceChartWrap">
+          <p style="text-align:center;color:#777;padding:30px;">Run optimization to generate convergence tracking curves.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Starting Score</th>
+                <th>Final Best Score</th>
+                <th>Total Improvement</th>
+                <th>Total Route Evaluations</th>
+              </tr>
+            </thead>
+            <tbody id="convergenceSummaryBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 4: Multi-Seed Study -->
+      <div class="tab-pane" id="tabMultiSeed">
+        <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:4px;">🔬 Multi-Seed Validation Study (Statistical Comparison)</h3>
+        <p class="caption" style="margin-bottom:14px;">
+          Executes stochastic methods over multiple random seeds to measure mean, std dev, best, worst, and mean gap to exact.
+        </p>
+
+        <div style="max-width:400px;margin-bottom:16px;">
+          <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:6px;">Number of Random Seeds to Evaluate:</label>
+          <div class="slider-container">
+            <input type="range" id="nSeedsSlider" min="5" max="30" value="15" step="5" />
+            <span class="slider-val-badge" id="nSeedsBadge">15</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <button type="button" class="btn btn-secondary" id="btnRunMultiSeed">
+            🚀 Run Multi-Seed Validation Benchmark
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Runs</th>
+                <th>Mean Score</th>
+                <th>Std Dev</th>
+                <th>Best Score</th>
+                <th>Worst Score</th>
+                <th>Feasibility %</th>
+                <th>Mean Road Dist (px)</th>
+                <th>Mean Lateness (min)</th>
+                <th>Mean CPU (ms)</th>
+                <th>Mean Gap vs Exact</th>
+              </tr>
+            </thead>
+            <tbody id="multiSeedTableBody">
+              <tr><td colspan="11" style="text-align:center;padding:24px;color:#777;">Run optimization first, then click Run Multi-Seed Validation Benchmark.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <button type="button" class="btn btn-secondary" id="btnExportMultiSeedCsv" style="display:none;">
+            📥 Export Multi-Seed Validation Study (CSV)
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 5: Turn-by-Turn Manifest -->
+      <div class="tab-pane" id="tabManifest">
+        <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:6px;">📋 Turn-by-Turn Delivery Schedule & Manifest</h3>
+        <p id="manifestHeader" style="margin-bottom:12px;font-size:0.95rem;color:#444;"></p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Leg</th>
+                <th>From → To</th>
+                <th>Destination Address</th>
+                <th>Road Dist</th>
+                <th>Travel Time</th>
+                <th>Est. Arrival</th>
+                <th>Customer Window</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="manifestTableBody">
+              <tr><td colspan="8" style="text-align:center;padding:24px;color:#777;">Run optimization to generate turn-by-turn delivery schedule.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <button type="button" class="btn btn-secondary" id="btnExportManifestCsv" style="display:none;">
+            📥 Export Turn-by-Turn Manifest as CSV
+          </button>
+        </div>
+      </div>
+
+    </main>
+
   </div>
-  <p class="info-row" id="mapInfo">No map loaded.</p>
-</div>
 
-<!-- ===================== STOPS + TIME WINDOWS ===================== -->
-<div class="section-row">
-<div class="card">
-  <h2>&#x1F3E0; Delivery Stops</h2>
-  <div class="btn-row" style="margin-bottom:8px">
-    <button class="btn btn-secondary btn-sm" onclick="selectAll()">All</button>
-    <button class="btn btn-secondary btn-sm" onclick="selectNone()">None</button>
-  </div>
-  <div class="stop-grid" id="stopGrid"></div>
-</div>
-
-<div class="card">
-  <h2>&#x23F0; Time Windows &amp; Service Time</h2>
-  <div style="overflow-x:auto">
-  <table class="tw-table" id="twTable">
-    <thead><tr><th>House</th><th>Open (min)</th><th>Close (min)</th><th>Service (min)</th></tr></thead>
-    <tbody id="twBody"></tbody>
-  </table>
-  </div>
-  <p class="info-row">Times in minutes from midnight. 09:00 = 540, 18:00 = 1080.</p>
-</div>
-</div>
-
-<!-- ===================== ALGORITHMS ===================== -->
-<div class="card">
-  <h2>&#x2699;&#xFE0F; Algorithms &amp; Options</h2>
-  <div class="algo-grid" id="algoGrid">
-    <label class="algo-chip"><input type="checkbox" value="nn" checked> <span class="tag tag-nn">NN</span> Nearest Neighbour</label>
-    <label class="algo-chip"><input type="checkbox" value="greedy" checked> <span class="tag tag-gr">GR</span> Greedy Insertion</label>
-    <label class="algo-chip"><input type="checkbox" value="2opt" checked> <span class="tag tag-2o">2O</span> 2-opt</label>
-    <label class="algo-chip"><input type="checkbox" value="hill" checked> <span class="tag tag-hc">HC</span> Hill Climbing</label>
-    <label class="algo-chip"><input type="checkbox" value="sa" checked> <span class="tag tag-sa">SA</span> Simulated Annealing</label>
-    <label class="algo-chip"><input type="checkbox" value="exact" checked> <span class="tag tag-ex">EX</span> Exact (Brute Force)</label>
-  </div>
-  <div class="btn-row" style="margin-top:12px">
-    <div class="field-group">
-      <label>Seed</label>
-      <input type="number" id="optSeed" value="42" min="0" style="width:80px">
-    </div>
-    <button class="btn btn-success" id="btnOptimise" onclick="runOptimise()">&#x25B6; Optimise Route</button>
-    <div class="loading hidden" id="optLoading"><div class="spinner"></div> Running algorithms&hellip;</div>
-  </div>
-  <div class="error-box hidden" id="optError"></div>
-</div>
-
-<!-- ===================== RESULTS ===================== -->
-<div class="card" id="resultsCard">
-  <h2>&#x1F4CA; Algorithm Results</h2>
-  <div style="overflow-x:auto">
-  <table id="resultsTable">
-    <thead>
-      <tr>
-        <th>Algorithm</th>
-        <th>Distance (px)</th>
-        <th>Drive (min)</th>
-        <th>Wait (min)</th>
-        <th>Late (min)</th>
-        <th>Elapsed (min)</th>
-        <th>Score</th>
-        <th>CPU (ms)</th>
-        <th>Gap to Exact (%)</th>
-      </tr>
-    </thead>
-    <tbody id="resultsBody"></tbody>
-  </table>
-  </div>
-  <p class="info-row" id="resultsInfo"></p>
-</div>
-
-<!-- ===================== ROUTE MAP ===================== -->
-<div class="card">
-  <h2>&#x1F5FA; Route Visualisation</h2>
-  <div class="canvas-wrap">
-    <canvas id="routeCanvas"></canvas>
-  </div>
-  <p class="info-row" id="routeInfo"></p>
-</div>
-
-<!-- ===================== CONVERGENCE ===================== -->
-<div class="card">
-  <h2>&#x1F4C8; Convergence (Hill Climbing &amp; SA)</h2>
-  <div class="chart-wrap">
-    <canvas id="convChart"></canvas>
-  </div>
-  <p class="info-row">Score vs. route evaluations on a log x-axis. Dashed line = exact optimum.</p>
-</div>
-
-<!-- ===================== BENCHMARK ===================== -->
-<div class="card">
-  <h2>&#x1F9EA; Multi-Seed Benchmark</h2>
-  <div class="bench-row">
-    <div class="field-group">
-      <label>Seeds</label>
-      <input type="number" id="benchSeeds" value="10" min="1" max="30" style="width:70px">
-    </div>
-    <button class="btn btn-secondary" onclick="runBenchmark()">Run Benchmark</button>
-    <div class="loading hidden" id="benchLoading"><div class="spinner"></div> Benchmarking&hellip;</div>
-    <button class="btn btn-secondary btn-sm" id="btnCsv" onclick="downloadCsv()" style="margin-left:auto">&#x1F4E5; Download CSV</button>
-  </div>
-  <div class="error-box hidden" id="benchError"></div>
-  <div style="overflow-x:auto;margin-top:10px">
-  <table id="benchTable">
-    <thead>
-      <tr>
-        <th>Algorithm</th><th>Mean Score</th><th>Std Dev</th><th>Best</th><th>Worst</th>
-        <th>Feasible %</th><th>Mean CPU (ms)</th><th>Mean Gap (%)</th>
-      </tr>
-    </thead>
-    <tbody id="benchBody"></tbody>
-  </table>
-  </div>
-</div>
-
-<!-- ===================== HOW IT WORKS ===================== -->
-<div class="card">
-  <h2>&#x2139;&#xFE0F; How It Works</h2>
-  <div class="howit">
-    <p><strong>Problem:</strong> Travelling Salesperson Problem with Time Windows (TSPTW) &mdash;
-    find the shortest route visiting every selected delivery house exactly once, departing from and returning to the depot, while respecting each house&rsquo;s delivery time window.</p>
-    <br>
-    <p><strong>Score formula:</strong> <code>score = distance_px + 1.5 &times; 60 px/min &times; minutes_late</code></p>
-    <p>Units: distances in <strong>pixels</strong>; speed = <strong>60 px per minute</strong>; time windows in <strong>minutes from midnight</strong> (540 = 09:00, 1080 = 18:00).</p>
-    <br>
-    <p><strong>Algorithms implemented:</strong></p>
-    <ul style="margin-left:16px;margin-top:6px">
-      <li><strong>Nearest Neighbour (NN)</strong> &mdash; greedy construction: always visit the closest unvisited node.</li>
-      <li><strong>Greedy (Cheapest) Insertion</strong> &mdash; iteratively insert the cheapest unvisited node.</li>
-      <li><strong>2-opt</strong> &mdash; local search: reverse segments that reduce total distance.</li>
-      <li><strong>Hill Climbing (HC)</strong> &mdash; random restart local search accepting any improvement.</li>
-      <li><strong>Simulated Annealing (SA)</strong> &mdash; probabilistic acceptance of worse moves; temperature decreases each iteration.</li>
-      <li><strong>Exact (Branch &amp; Bound)</strong> &mdash; guaranteed optimal; limited to &le;12 nodes.</li>
-    </ul>
-    <br>
-    <p><strong>Road routing:</strong> routes follow actual map roads using A* pathfinding on the detected road mask (dark pixels). Distance = sum of pixel-length road paths.</p>
-  </div>
-</div>
-
-</div><!-- /container -->
-
-<script>
-// =====================================================================
-// State
-// =====================================================================
-const API = '';  // same origin
-let currentImageB64 = null;   // base64 of current map (original resolution)
-let currentNodes = [];         // DetectedNode dicts from server
-let lastResults = null;        // /api/optimise response
-let lastBenchmark = null;      // /api/benchmark response
-let convChart = null;
-
-// =====================================================================
-// Image helpers
-// =====================================================================
-function downscaleB64(b64, maxSide = 1000) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      let w = img.naturalWidth, h = img.naturalHeight;
-      if (w > maxSide || h > maxSide) {
-        const r = Math.min(maxSide / w, maxSide / h);
-        w = Math.round(w * r); h = Math.round(h * r);
-      }
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(c.toDataURL('image/png').split(',')[1]);
-    };
-    img.src = 'data:image/png;base64,' + b64;
-  });
-}
-
-function fileToB64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = e => res(e.target.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-}
-
-// =====================================================================
-// Map loading
-// =====================================================================
-async function loadSample() {
-  setMapLoading(true);
-  try {
-    const r = await fetch(API + '/api/sample');
-    if (!r.ok) throw new Error(await r.text());
-    const data = await r.json();
-    currentImageB64 = data.image;
-    setNodes(data.nodes);
-    drawMapImage(data.image);
-    document.getElementById('mapInfo').textContent =
-      `Sample map loaded. ${data.nodes.filter(n=>!n.is_depot).length} houses detected.`;
-  } catch(e) { showMapError(e); }
-  setMapLoading(false);
-}
-
-async function loadRandom() {
-  setMapLoading(true);
-  const seed = parseInt(document.getElementById('randSeed').value) || null;
-  const n_houses = parseInt(document.getElementById('randHouses').value) || 8;
-  try {
-    const r = await fetch(API + '/api/random-map', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({seed, n_houses})
-    });
-    if (!r.ok) throw new Error(await r.text());
-    const data = await r.json();
-    currentImageB64 = data.image;
-    setNodes(data.nodes);
-    drawMapImage(data.image);
-    document.getElementById('mapInfo').textContent =
-      `Random map (seed=${seed}, houses=${n_houses}) loaded. ${data.nodes.filter(n=>!n.is_depot).length} houses detected.`;
-  } catch(e) { showMapError(e); }
-  setMapLoading(false);
-}
-
-async function loadUpload(input) {
-  if (!input.files.length) return;
-  setMapLoading(true);
-  try {
-    let b64 = await fileToB64(input.files[0]);
-    b64 = await downscaleB64(b64, 1000);
-    const r = await fetch(API + '/api/detect', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({image: b64})
-    });
-    if (!r.ok) throw new Error(await r.text());
-    const data = await r.json();
-    currentImageB64 = b64;
-    setNodes(data.nodes);
-    drawMapImage(b64);
-    document.getElementById('mapInfo').textContent =
-      `Uploaded map. ${data.nodes.filter(n=>!n.is_depot).length} houses detected.`;
-  } catch(e) { showMapError(e); }
-  setMapLoading(false);
-}
-
-function setMapLoading(on) {
-  document.getElementById('btnSample').disabled = on;
-}
-
-function showMapError(e) {
-  let msg = e.message || String(e);
-  try { msg = JSON.parse(msg).detail || msg; } catch {}
-  document.getElementById('mapInfo').textContent = 'Error: ' + msg;
-}
-
-// =====================================================================
-// Draw map image on canvas
-// =====================================================================
-function drawMapImage(b64) {
-  const canvas = document.getElementById('mapCanvas');
-  const img = new Image();
-  img.onload = () => {
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-  };
-  img.src = 'data:image/png;base64,' + b64;
-}
-
-// =====================================================================
-// Nodes → stop selector + time-window table
-// =====================================================================
-function setNodes(nodes) {
-  currentNodes = nodes;
-  const houses = nodes.filter(n => !n.is_depot);
-
-  // Stop chips
-  const grid = document.getElementById('stopGrid');
-  grid.innerHTML = '';
-  houses.forEach(h => {
-    const chip = document.createElement('label');
-    chip.className = 'stop-chip checked';
-    chip.dataset.id = h.id;
-    chip.innerHTML = `<input type="checkbox" value="${h.id}" checked> ${h.id}`;
-    chip.querySelector('input').addEventListener('change', e => {
-      chip.classList.toggle('checked', e.target.checked);
-    });
-    grid.appendChild(chip);
-  });
-
-  // TW table
-  const tbody = document.getElementById('twBody');
-  tbody.innerHTML = '';
-  houses.forEach(h => {
-    const tw = h.time_window || [0, 1440];
-    const row = document.createElement('tr');
-    row.dataset.id = h.id;
-    row.innerHTML = `
-      <td>${h.id}</td>
-      <td><input type="number" class="tw-open" value="${tw[0]}" min="0" max="1440" onchange="validateTw(this)"></td>
-      <td><input type="number" class="tw-close" value="${tw[1]}" min="0" max="1440" onchange="validateTw(this)"></td>
-      <td><input type="number" class="tw-svc" value="${h.service_time}" min="1" max="120"></td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
-function validateTw(input) {
-  const row = input.closest('tr');
-  const open = parseFloat(row.querySelector('.tw-open').value);
-  const close = parseFloat(row.querySelector('.tw-close').value);
-  if (open > close) {
-    input.style.borderColor = '#ef4444';
-  } else {
-    row.querySelectorAll('input').forEach(i => i.style.borderColor = '');
-  }
-}
-
-function selectAll() {
-  document.querySelectorAll('#stopGrid .stop-chip input').forEach(cb => {
-    cb.checked = true; cb.closest('.stop-chip').classList.add('checked');
-  });
-}
-function selectNone() {
-  document.querySelectorAll('#stopGrid .stop-chip input').forEach(cb => {
-    cb.checked = false; cb.closest('.stop-chip').classList.remove('checked');
-  });
-}
-
-function getSelectedIds() {
-  return [...document.querySelectorAll('#stopGrid .stop-chip input:checked')].map(i => i.value);
-}
-
-function getSelectedAlgos() {
-  return [...document.querySelectorAll('#algoGrid input:checked')].map(i => i.value);
-}
-
-function getNodesWithEdits() {
-  // Start from currentNodes, overlay any TW / service edits
-  const nodes = JSON.parse(JSON.stringify(currentNodes));
-  const tbody = document.getElementById('twBody');
-  [...tbody.querySelectorAll('tr')].forEach(row => {
-    const id = row.dataset.id;
-    const node = nodes.find(n => n.id === id);
-    if (!node) return;
-    node.time_window = [
-      parseFloat(row.querySelector('.tw-open').value),
-      parseFloat(row.querySelector('.tw-close').value)
-    ];
-    node.service_time = parseInt(row.querySelector('.tw-svc').value);
-  });
-  return nodes;
-}
-
-// =====================================================================
-// Optimise
-// =====================================================================
-async function runOptimise() {
-  if (!currentImageB64) { alert('Load a map first.'); return; }
-  const selectedIds = getSelectedIds();
-  const algorithms = getSelectedAlgos();
-  if (!selectedIds.length) { alert('Select at least one house.'); return; }
-  if (!algorithms.length) { alert('Select at least one algorithm.'); return; }
-
-  const btn = document.getElementById('btnOptimise');
-  const loading = document.getElementById('optLoading');
-  const errBox = document.getElementById('optError');
-  btn.disabled = true;
-  loading.classList.remove('hidden');
-  errBox.classList.add('hidden');
-
-  try {
-    const payload = {
-      image: currentImageB64,
-      nodes: getNodesWithEdits(),
-      selected_ids: selectedIds,
-      algorithms,
-      seed: parseInt(document.getElementById('optSeed').value) || 42
-    };
-    const r = await fetch(API + '/api/optimise', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({detail: r.statusText}));
-      throw new Error(err.detail || JSON.stringify(err));
-    }
-    lastResults = await r.json();
-    renderResults(lastResults);
-    renderRouteMap(lastResults);
-    renderConvergence(lastResults);
-  } catch(e) {
-    errBox.textContent = 'Error: ' + (e.message || e);
-    errBox.classList.remove('hidden');
-  }
-  btn.disabled = false;
-  loading.classList.add('hidden');
-}
-
-// =====================================================================
-// Render results table
-// =====================================================================
-const ALGO_LABELS = {nn:'Nearest Neighbour',greedy:'Greedy Insertion','2opt':'2-opt',hill:'Hill Climbing',sa:'Simulated Annealing',exact:'Exact (B&B)'};
-
-function renderResults(data) {
-  const tbody = document.getElementById('resultsBody');
-  tbody.innerHTML = '';
-  const order = ['nn','greedy','2opt','hill','sa','exact'];
-  const present = order.filter(k => data.results[k]);
-
-  present.forEach(k => {
-    const r = data.results[k];
-    const tr = document.createElement('tr');
-    if (r.is_best_heuristic) tr.className = 'row-best';
-    if (r.is_exact) tr.className = 'row-exact';
-
-    const badge = r.is_best_heuristic
-      ? '<span class="badge badge-green">Best</span> '
-      : (r.is_exact ? '<span class="badge badge-blue">Ref</span> ' : '');
-
-    const gap = r.gap_pct != null ? r.gap_pct.toFixed(1) + '%' : (r.is_exact ? '0.0%' : '—');
-    const dist = r.distance === null ? '—' : r.distance.toFixed(1);
-    const score = r.score >= 1e9 ? '>12 nodes' : r.score.toFixed(1);
-
-    tr.innerHTML = `
-      <td>${badge}${ALGO_LABELS[k] || k}</td>
-      <td>${dist}</td>
-      <td>${r.drive_min.toFixed(1)}</td>
-      <td>${r.wait_min.toFixed(1)}</td>
-      <td>${r.late_min.toFixed(1)}</td>
-      <td>${r.elapsed_min.toFixed(1)}</td>
-      <td>${score}</td>
-      <td>${r.cpu_ms.toFixed(2)}</td>
-      <td>${gap}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  const info = document.getElementById('resultsInfo');
-  if (data.exact_reference_score != null) {
-    info.textContent = `Exact optimum: ${data.exact_reference_score.toFixed(1)} pts. ` +
-      `Best heuristic: ${data.best_heuristic_key ? ALGO_LABELS[data.best_heuristic_key] : '—'}.`;
-  } else {
-    info.textContent = data.results.exact
-      ? 'Exact solver not applicable (> 12 nodes).'
-      : '';
-  }
-}
-
-// =====================================================================
-// Render route visualisation
-// =====================================================================
-const LEG_COLORS = [
-  '#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6',
-  '#8b5cf6','#ec4899','#14b8a6','#f59e0b','#84cc16','#6366f1'
-];
-
-function renderRouteMap(data) {
-  const canvas = document.getElementById('routeCanvas');
-  if (!currentImageB64) return;
-
-  const img = new Image();
-  img.onload = () => {
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-
-    const polylines = data.polylines || [];
-    const nodes = data.nodes || [];
-    const bestKey = data.best_heuristic_key;
-    const bestResult = bestKey && data.results[bestKey];
-
-    // Draw polylines (legs) in different colors
-    polylines.forEach((pts, legIdx) => {
-      if (!pts || pts.length < 2) return;
-      const col = LEG_COLORS[legIdx % LEG_COLORS.length];
-
-      // Glow
-      ctx.strokeStyle = col;
-      ctx.lineWidth = 8;
-      ctx.globalAlpha = 0.25;
-      ctx.beginPath();
-      ctx.moveTo(pts[0][0], pts[0][1]);
-      pts.forEach(p => ctx.lineTo(p[0], p[1]));
-      ctx.stroke();
-
-      // Main line
-      ctx.globalAlpha = 0.9;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(pts[0][0], pts[0][1]);
-      pts.forEach(p => ctx.lineTo(p[0], p[1]));
-      ctx.stroke();
-    });
-    ctx.globalAlpha = 1;
-
-    // Draw node badges + labels on top
-    if (bestResult && bestResult.route_labels) {
-      const labels = bestResult.route_labels;
-      labels.forEach((lbl, stopIdx) => {
-        const node = nodes.find(n => n.id === lbl);
-        if (!node) return;
-        const x = node.x, y = node.y;
-        const isDepot = node.is_depot;
-
-        // Badge circle
-        const radius = isDepot ? 16 : 13;
-        ctx.fillStyle = isDepot ? '#ef4444' : '#3b82f6';
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Badge text
-        ctx.fillStyle = '#fff';
-        ctx.font = `bold ${isDepot ? 11 : 10}px system-ui`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(isDepot ? 'D' : String(stopIdx), x, y);
-
-        // Label pill
-        const tw = node.time_window ? `${minsToTime(node.time_window[0])}-${minsToTime(node.time_window[1])}` : '';
-        const labelText = isDepot ? 'DEPOT' : `Stop ${stopIdx}: ${lbl}  ${tw}`;
-        ctx.font = 'bold 10px system-ui';
-        const tw_w = ctx.measureText(labelText).width + 10;
-        const lx = x + radius + 4;
-        const ly = y - 10;
-
-        // Pill background
-        ctx.fillStyle = 'rgba(15,17,23,0.82)';
-        roundRect(ctx, lx, ly, tw_w, 18, 4);
-        ctx.fill();
-
-        ctx.fillStyle = isDepot ? '#fca5a5' : '#93c5fd';
-        ctx.textAlign = 'left';
-        ctx.fillText(labelText, lx + 5, ly + 9);
-      });
-    }
-
-    document.getElementById('routeInfo').textContent = bestKey
-      ? `Route: ${ALGO_LABELS[bestKey] || bestKey} (best heuristic). ${polylines.length} legs drawn.`
-      : 'No route to display.';
-  };
-  img.src = 'data:image/png;base64,' + currentImageB64;
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function minsToTime(m) {
-  const h = Math.floor(m / 60), mn = m % 60;
-  return String(h).padStart(2,'0') + ':' + String(mn).padStart(2,'0');
-}
-
-// =====================================================================
-// Convergence chart
-// =====================================================================
-function renderConvergence(data) {
-  const hcResult = data.results['hill'];
-  const saResult = data.results['sa'];
-  const exactScore = data.exact_reference_score;
-
-  const datasets = [];
-
-  function makeDataset(result, label, color) {
-    if (!result || !result.evaluation_history || !result.score_history) return null;
-    const pts = result.evaluation_history.map((ev, i) => ({x: ev || 1, y: result.score_history[i]}));
-    return {
-      label, data: pts, borderColor: color, backgroundColor: color + '33',
-      pointRadius: 0, borderWidth: 2, tension: 0.1, fill: false
-    };
-  }
-
-  const hcDs = makeDataset(hcResult, 'Hill Climbing', '#d97706');
-  const saDs = makeDataset(saResult, 'Simulated Annealing', '#dc2626');
-  if (hcDs) datasets.push(hcDs);
-  if (saDs) datasets.push(saDs);
-
-  if (exactScore != null) {
-    // Add horizontal dashed line using annotation-free approach: single point repeated
-    const maxEval = Math.max(
-      hcResult && hcResult.evaluation_history ? Math.max(...hcResult.evaluation_history) : 1,
-      saResult && saResult.evaluation_history ? Math.max(...saResult.evaluation_history) : 1,
-      1
-    );
-    datasets.push({
-      label: 'Exact Optimum', borderColor: '#93c5fd', borderDash: [6, 4],
-      borderWidth: 1.5, pointRadius: 0,
-      data: [{x: 1, y: exactScore}, {x: maxEval, y: exactScore}],
-      fill: false
-    });
-  }
-
-  if (convChart) { convChart.destroy(); convChart = null; }
-
-  const ctx = document.getElementById('convChart').getContext('2d');
-  convChart = new Chart(ctx, {
-    type: 'line',
-    data: {datasets},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: {
-        x: {
-          type: 'logarithmic',
-          title: {display: true, text: 'Evaluations (log scale)', color: '#94a3b8'},
-          ticks: {color: '#94a3b8'},
-          grid: {color: '#2d3350'}
-        },
-        y: {
-          title: {display: true, text: 'Score', color: '#94a3b8'},
-          ticks: {color: '#94a3b8'},
-          grid: {color: '#2d3350'}
-        }
-      },
-      plugins: {
-        legend: {labels: {color: '#e2e8f0'}},
-        tooltip: {mode: 'index', intersect: false}
-      }
-    }
-  });
-}
-
-// =====================================================================
-// Benchmark
-// =====================================================================
-async function runBenchmark() {
-  if (!currentImageB64) { alert('Load a map first.'); return; }
-  const selectedIds = getSelectedIds();
-  if (!selectedIds.length) { alert('Select at least one house.'); return; }
-
-  const loading = document.getElementById('benchLoading');
-  const errBox = document.getElementById('benchError');
-  loading.classList.remove('hidden');
-  errBox.classList.add('hidden');
-
-  try {
-    const payload = {
-      image: currentImageB64,
-      nodes: getNodesWithEdits(),
-      selected_ids: selectedIds,
-      n_seeds: parseInt(document.getElementById('benchSeeds').value) || 10
-    };
-    const r = await fetch(API + '/api/benchmark', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({detail: r.statusText}));
-      throw new Error(err.detail || JSON.stringify(err));
-    }
-    lastBenchmark = await r.json();
-    renderBenchmark(lastBenchmark.summary);
-  } catch(e) {
-    errBox.textContent = 'Error: ' + (e.message || e);
-    errBox.classList.remove('hidden');
-  }
-  loading.classList.add('hidden');
-}
-
-function renderBenchmark(summary) {
-  const tbody = document.getElementById('benchBody');
-  tbody.innerHTML = '';
-  const order = ['nn','greedy','2opt','hill','sa','exact'];
-  order.filter(k => summary[k]).forEach(k => {
-    const s = summary[k];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${ALGO_LABELS[k] || k}</td>
-      <td>${(s.mean_score || s.mean || 0).toFixed(1)}</td>
-      <td>${(s.std_score || s.std || 0).toFixed(1)}</td>
-      <td>${(s.best_score || s.best || 0).toFixed(1)}</td>
-      <td>${(s.worst_score || s.worst || 0).toFixed(1)}</td>
-      <td>${((s.feasibility_pct || s.feasible_pct || 0)).toFixed(1)}%</td>
-      <td>${(s.mean_cpu_ms || s.mean_cpu || 0).toFixed(2)}</td>
-      <td>${s.mean_gap_pct != null ? s.mean_gap_pct.toFixed(2) + '%' : '—'}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-// =====================================================================
-// CSV export
-// =====================================================================
-function downloadCsv() {
-  if (!lastResults && !lastBenchmark) { alert('Run optimise or benchmark first.'); return; }
-
-  const rows = [['Algorithm','Distance(px)','Drive(min)','Wait(min)','Late(min)','Elapsed(min)','Score','CPU(ms)','Gap(%)']];
-  if (lastResults) {
-    const order = ['nn','greedy','2opt','hill','sa','exact'];
-    order.filter(k => lastResults.results[k]).forEach(k => {
-      const r = lastResults.results[k];
-      rows.push([
-        ALGO_LABELS[k] || k, r.distance, r.drive_min, r.wait_min,
-        r.late_min, r.elapsed_min, r.score, r.cpu_ms,
-        r.gap_pct != null ? r.gap_pct : ''
-      ]);
-    });
-  }
-  const csv = rows.map(r => r.join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'route_results.csv';
-  a.click();
-}
-
-// =====================================================================
-// Auto-load sample on page ready
-// =====================================================================
-window.addEventListener('load', loadSample);
-</script>
+  <script src="app.js"></script>
 </body>
 </html>
