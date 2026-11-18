@@ -1,0 +1,13 @@
+__pycache__
+.pytest_cache
+*.pyc
+*.pyo
+test_solver.py
+test_vision.py
+test_pathfinding.py
+buildozer.spec
+labeled_map.png
+route_road_test.png
+generated_map.png
+requirements-desktop.txt
+.git
